@@ -1,11 +1,16 @@
-<script src="https://unpkg.com/hydra-synth"></script>
-<script>
-  window.onload = () => {
-    const hydra = new Hydra({ detectAudio: false })
-
-    // simple oscillateur avec couleur fixe
-    osc(10, 0.1, 1.5)
-      .color(0.5, 0.2, 0.3)
-      .out()
-  }
-</script>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hydra test</title>
+</head>
+<body>
+  <script src="https://unpkg.com/hydra-synth"></script>
+  <script>
+    window.onload = () => {
+      const hydra = new Hydra({ detectAudio: false })
+      osc(10, 0.1, 1.5).out()
+    }
+  </script>
+</body>
+</html>
