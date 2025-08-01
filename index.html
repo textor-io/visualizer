@@ -24,7 +24,8 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
   let audioCtx = new AudioContext();
   let mic = audioCtx.createMediaStreamSource(stream);
   a.setSource(mic);
-  a.show(); // optionnel, ça affiche le graphique audio
+  a.show();
+  console.log('Micro connecté, fft:', a.fft);
 });
 
 // Visualisation qui utilise a.fft[]
