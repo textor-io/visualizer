@@ -1,30 +1,11 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Hydra + Audio</title>
-  <script src="https://unpkg.com/hydra-synth@2.0.2/dist/hydra-synth.min.js"></script>
-  <style>body,html{margin:0;padding:0;overflow:hidden;background:#000;}</style>
-</head>
-<body>
+<script src="https://unpkg.com/hydra-synth"></script>
 <script>
-  // Création de l'instance Hydra avec détection audio activée
-  const hydra = new Hydra({ detectAudio: true });
+  window.onload = () => {
+    const hydra = new Hydra({ detectAudio: false })
 
-  // Demande l'accès au micro
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    const audioCtx = new AudioContext();
-    const mic = audioCtx.createMediaStreamSource(stream);
-    hydra.setAudioInput(mic);
-  }).catch(e => {
-    console.warn('Micro inaccessible : ', e);
-  });
-
-  // Visualisation simple modulée par l'audio
-  osc(10, 0.1, 1.5)
-    .color(() => 0.3 + hydra.audioFFT[0] * 2, () => 0.5 + hydra.audioFFT[1] * 2, () => 0.7 + hydra.audioFFT[2] * 2)
-    .modulate(osc(20, 0.3), () => hydra.audioFFT[1])
-    .out();
+    // simple oscillateur avec couleur fixe
+    osc(10, 0.1, 1.5)
+      .color(0.5, 0.2, 0.3)
+      .out()
+  }
 </script>
-</body>
-</html>
