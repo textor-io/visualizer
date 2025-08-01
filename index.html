@@ -10,72 +10,65 @@
 </head>
 <body>
   <script>
-    let hydra;
-    let mic, fft;
+    new p5(p => {
+      let hydra;
+      let mic, fft;
 
-    function setup() {
-      noCanvas(); // On n'utilise pas le canvas de p5 pour le visuel
+      p.setup = function() {
+        p.noCanvas();
 
-      // Démarrage micro
-      mic = new p5.AudioIn();
-      mic.start();
+        mic = new p5.AudioIn();
+        mic.start();
 
-      // FFT pour analyser le son
-      fft = new p5.FFT();
-      fft.setInput(mic);
+        fft = new p5.FFT();
+        fft.setInput(mic);
 
-      // Initialisation Hydra sans gestion audio interne
-      hydra = new Hydra({
-        detectAudio: false,
-      });
+        hydra = new Hydra({
+          detectAudio: false,
+        });
+        document.body.appendChild(hydra.canvas);
 
-      document.body.appendChild(hydra.canvas);
+        drawHydra();
+      };
 
-      // Démarrer la boucle d'animation Hydra
-      drawHydra();
-    }
+      function drawHydra() {
+        let spectrum = fft.analyze();
 
-    function drawHydra() {
-      // Récupérer le spectre FFT
-      let spectrum = fft.analyze();
+        let bass = fft.getEnergy("bass") / 255;
+        let lowMid = fft.getEnergy("lowMid") / 255;
+        let mid = fft.getEnergy("mid") / 255;
+        let highMid = fft.getEnergy("highMid") / 255;
+        let treble = fft.getEnergy("treble") / 255;
 
-      // Extrait des valeurs spécifiques comme bass, mid, treble (0-255)
-      let bass = fft.getEnergy("bass") / 255;
-      let lowMid = fft.getEnergy("lowMid") / 255;
-      let mid = fft.getEnergy("mid") / 255;
-      let highMid = fft.getEnergy("highMid") / 255;
-      let treble = fft.getEnergy("treble") / 255;
+        osc(10, 0.03, 0.8)
+          .color(
+            0.3 + bass * 1.5,
+            0.4 + mid * 1.2,
+            0.5 + treble * 1.3
+          )
+          .rotate(time * 0.02 + lowMid * 0.15)
+          .modulate(
+            osc(5, 0.02).rotate(time * 0.1 + mid * 0.5),
+            0.3
+          )
+          .kaleid(6)
+          .scale(1 + lowMid * 0.4)
+          .add(
+            shape(6, 0.3, 0.2)
+              .scale(0.8 + bass * 0.5)
+              .rotate(time * 0.05 + treble * 0.2)
+              .color(0.9, 0.6, 0.3)
+              .mult(
+                osc(20).rotate(0.5 + lowMid * 0.3)
+              )
+              .modulate(noise(3).rotate(0.2), 0.15)
+          )
+          .blend(o0, 0.25)
+          .out();
 
-      // Code Hydra basé sur le code donné (adapté au JS ici)
-      osc(10, 0.03, 0.8)
-        .color(
-          0.3 + bass * 1.5,
-          0.4 + mid * 1.2,
-          0.5 + treble * 1.3
-        )
-        .rotate(time * 0.02 + lowMid * 0.15)
-        .modulate(
-          osc(5, 0.02).rotate(time * 0.1 + mid * 0.5),
-          0.3
-        )
-        .kaleid(6)
-        .scale(1 + lowMid * 0.4)
-        .add(
-          shape(6, 0.3, 0.2)
-            .scale(0.8 + bass * 0.5)
-            .rotate(time * 0.05 + treble * 0.2)
-            .color(0.9, 0.6, 0.3)
-            .mult(
-              osc(20).rotate(0.5 + lowMid * 0.3)
-            )
-            .modulate(noise(3).rotate(0.2), 0.15)
-        )
-        .blend(o0, 0.25)
-        .out();
-
-      // Boucle d’animation
-      requestAnimationFrame(drawHydra);
-    }
+        requestAnimationFrame(drawHydra);
+      }
+    });
   </script>
 </body>
 </html>
