@@ -2,32 +2,29 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Hydra Demo</title>
-  <script src="https://unpkg.com/hydra-synth"></script>
-  <style>
-    body, html { margin: 0; height: 100%; overflow: hidden; background: black; }
-    canvas { display: block; width: 100vw; height: 100vh; }
-  </style>
+  <title>Hydra + Audio</title>
+  <script src="https://unpkg.com/hydra-synth@2.0.2/dist/hydra-synth.min.js"></script>
+  <style>body,html{margin:0;padding:0;overflow:hidden;background:#000;}</style>
 </head>
 <body>
-  <script>
-    // Création d'une instance Hydra
-    const hydra = new Hydra({
-      detectAudio: false,
-      canvas: document.createElement('canvas')
-    });
-    document.body.appendChild(hydra.canvas);
+<script>
+  // Création de l'instance Hydra avec détection audio activée
+  const hydra = new Hydra({ detectAudio: true });
 
-    // Exemple simple d'animation Hydra
-    osc(10, 0.03, 0.8)
-      .color(() => 0.3 + a.fft[0] * 1.2,
-             () => 0.4 + a.fft[2] * 0.8,
-             () => 0.5 + a.fft[3] * 0.9)
-      .rotate(() => time * 0.02 + a.fft[1] * 0.1)
-      .modulate(osc(5, 0.02).rotate(0.2), 0.2)
-      .kaleid(4)
-      .scale(() => 1 + a.fft[1] * 0.2)
-      .out();
-  </script>
+  // Demande l'accès au micro
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const audioCtx = new AudioContext();
+    const mic = audioCtx.createMediaStreamSource(stream);
+    hydra.setAudioInput(mic);
+  }).catch(e => {
+    console.warn('Micro inaccessible : ', e);
+  });
+
+  // Visualisation simple modulée par l'audio
+  osc(10, 0.1, 1.5)
+    .color(() => 0.3 + hydra.audioFFT[0] * 2, () => 0.5 + hydra.audioFFT[1] * 2, () => 0.7 + hydra.audioFFT[2] * 2)
+    .modulate(osc(20, 0.3), () => hydra.audioFFT[1])
+    .out();
+</script>
 </body>
 </html>
