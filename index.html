@@ -2,15 +2,32 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Hydra test</title>
+  <title>Hydra Demo</title>
+  <script src="https://unpkg.com/hydra-synth"></script>
+  <style>
+    body, html { margin: 0; height: 100%; overflow: hidden; background: black; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
 </head>
 <body>
-  <script src="https://unpkg.com/hydra-synth"></script>
   <script>
-    window.onload = () => {
-      const hydra = new Hydra({ detectAudio: false })
-      osc(10, 0.1, 1.5).out()
-    }
+    // Création d'une instance Hydra
+    const hydra = new Hydra({
+      detectAudio: false,
+      canvas: document.createElement('canvas')
+    });
+    document.body.appendChild(hydra.canvas);
+
+    // Exemple simple d'animation Hydra
+    osc(10, 0.03, 0.8)
+      .color(() => 0.3 + a.fft[0] * 1.2,
+             () => 0.4 + a.fft[2] * 0.8,
+             () => 0.5 + a.fft[3] * 0.9)
+      .rotate(() => time * 0.02 + a.fft[1] * 0.1)
+      .modulate(osc(5, 0.02).rotate(0.2), 0.2)
+      .kaleid(4)
+      .scale(() => 1 + a.fft[1] * 0.2)
+      .out();
   </script>
 </body>
 </html>
