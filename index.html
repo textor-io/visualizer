@@ -1,3 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hydra Audio Test</title>
+  <script src="https://unpkg.com/hydra-synth"></script>
+  <style>
+    body, html { margin: 0; height: 100%; overflow: hidden; background: black; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
 <script src="https://unpkg.com/hydra-synth@1.4.6"></script>
 <script>
   const hydra = new Hydra({
@@ -24,3 +36,6 @@
     console.error("hydra.audio non disponible, vérifie la version du script");
   }
 </script>
+
+</body>
+</html>
