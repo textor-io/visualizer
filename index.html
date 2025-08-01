@@ -17,8 +17,8 @@
   </style>
 </head>
 <body>
+  
   <script>
-    // Création de l'instance Hydra
     const hydra = new Hydra({
       detectAudio: true,
       canvas: document.createElement('canvas')
@@ -26,18 +26,15 @@
     document.body.appendChild(hydra.canvas);
 
     const a = hydra.audio;
-    console.log('Hydra audio objet:', a);
 
     if (a) {
-      // Demander l'accès au micro et connecter à Hydra
       navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
         const audioCtx = new AudioContext();
-        audioCtx.resume(); // Nécessaire parfois pour activer l'audio sur certains navigateurs
+        audioCtx.resume();
         const mic = audioCtx.createMediaStreamSource(stream);
         a.setSource(mic);
         a.show();
 
-        // Visualisation basique liée à l'audio
         osc(10, 0.03, 0.8)
           .color(
             () => 0.3 + a.fft[0] * 1.5,
@@ -70,8 +67,9 @@
         console.error("Erreur accès micro:", err);
       });
     } else {
-      console.error("hydra.audio non disponible, vérifie la version du script");
+      console.error("hydra.audio non disponible");
     }
   </script>
+
 </body>
 </html>
