@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Hydra Audio Demo</title>
+  <title>Hydra Audio Test</title>
   <script src="https://unpkg.com/hydra-synth"></script>
   <style>
     body, html { margin: 0; height: 100%; overflow: hidden; background: black; }
@@ -10,54 +10,54 @@
   </style>
 </head>
 <body>
-  <script>
-    const hydra = new Hydra({
-      detectAudio: false,
-      canvas: document.createElement('canvas')
-    });
-    document.body.appendChild(hydra.canvas);
+<script>
+  const hydra = new Hydra({
+    detectAudio: false,
+    canvas: document.createElement('canvas')
+  });
+  document.body.appendChild(hydra.canvas);
 
-    const a = hydra.audio; // **crée l'input audio**
+  const a = hydra.audio;
+  console.log('Hydra:', hydra, 'Audio input a:', a);
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-      let audioCtx = new AudioContext();
-      audioCtx.resume();
-      let mic = audioCtx.createMediaStreamSource(stream);
-      a.setSource(mic);
-      a.show();
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    let audioCtx = new AudioContext();
+    audioCtx.resume();
+    let mic = audioCtx.createMediaStreamSource(stream);
+    a.setSource(mic);
+    a.show();
 
-      // Visualisation basée sur l'audio
-      osc(10, 0.03, 0.8)
-        .color(
-          () => 0.3 + a.fft[0] * 1.5,
-          () => 0.4 + a.fft[2] * 1.2,
-          () => 0.5 + a.fft[3] * 1.3
-        )
-        .rotate(() => time * 0.02 + a.fft[1] * 0.15)
-        .modulate(
-          osc(5, 0.02)
-            .rotate(() => time * 0.1 + a.fft[2] * 0.5),
-          0.3
-        )
-        .kaleid(6)
-        .scale(() => 1 + a.fft[1] * 0.4)
-        .add(
-          shape(6, 0.3, 0.2)
-            .scale(() => 0.8 + a.fft[0] * 0.5)
-            .rotate(() => time * 0.05 + a.fft[3] * 0.2)
-            .color(0.9, 0.6, 0.3)
-            .mult(
-              osc(20)
-                .rotate(0.5 + a.fft[1] * 0.3)
-            )
-            .modulate(noise(3).rotate(0.2), 0.15)
-        )
-        .blend(o0, 0.25)
-        .out();
+    osc(10, 0.03, 0.8)
+      .color(
+        () => 0.3 + a.fft[0] * 1.5,
+        () => 0.4 + a.fft[2] * 1.2,
+        () => 0.5 + a.fft[3] * 1.3
+      )
+      .rotate(() => time * 0.02 + a.fft[1] * 0.15)
+      .modulate(
+        osc(5, 0.02)
+          .rotate(() => time * 0.1 + a.fft[2] * 0.5),
+        0.3
+      )
+      .kaleid(6)
+      .scale(() => 1 + a.fft[1] * 0.4)
+      .add(
+        shape(6, 0.3, 0.2)
+          .scale(() => 0.8 + a.fft[0] * 0.5)
+          .rotate(() => time * 0.05 + a.fft[3] * 0.2)
+          .color(0.9, 0.6, 0.3)
+          .mult(
+            osc(20)
+              .rotate(0.5 + a.fft[1] * 0.3)
+          )
+          .modulate(noise(3).rotate(0.2), 0.15)
+      )
+      .blend(o0, 0.25)
+      .out();
 
-    }).catch(err => {
-      console.error("Erreur d'accès au micro :", err);
-    });
-  </script>
+  }).catch(err => {
+    console.error("Erreur micro:", err);
+  });
+</script>
 </body>
 </html>
