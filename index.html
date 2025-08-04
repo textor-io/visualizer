@@ -3,127 +3,130 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Visualisation Hydra + Micro</title>
-
+<title>Hydra Audio Visualizer</title>
+<script src="https://cdn.jsdelivr.net/npm/hydra-synth/dist/hydra-synth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5/lib/p5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5/lib/addons/p5.sound.min.js"></script>
 <style>
-  body, html {
-    margin: 0; padding: 0; overflow: hidden; background: #000;
-    height: 100%;
-    font-family: Arial, sans-serif;
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: black; overflow: hidden;
   }
-  #startOverlay {
+  #overlay {
     position: fixed;
-    top:0; left:0; right:0; bottom:0;
-    background: rgba(30,30,30,0.7);
+    inset: 0;
+    background: rgba(50, 50, 50, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10;
-    cursor: pointer;
+    user-select: none;
   }
   #startBtn {
-    background: rgba(180,180,180,0.3);
-    border: 2px solid rgba(180,180,180,0.6);
+    padding: 1.5em 3em;
+    font-size: 1.8rem;
+    font-weight: 600;
     color: #ddd;
-    font-size: 2.5rem;
-    padding: 1.2rem 3rem;
+    background: rgba(200, 200, 200, 0.15);
+    border: 2px solid #bbb;
     border-radius: 12px;
-    user-select: none;
-    transition: background 0.3s ease;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   #startBtn:hover {
-    background: rgba(180,180,180,0.5);
+    background: rgba(200, 200, 200, 0.35);
+    color: #fff;
   }
   canvas {
-    display: block;
+    position: fixed !important;
+    top: 0; left: 0;
     width: 100vw !important;
     height: 100vh !important;
+    z-index: 1;
+    pointer-events: none; /* important pour que l'overlay soit cliquable */
   }
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/addons/p5.sound.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hydra-synth/dist/hydra-synth.js"></script>
-
 </head>
 <body>
 
-<div id="startOverlay">
-  <div id="startBtn">Démarrer le micro</div>
+<div id="overlay">
+  <button id="startBtn">Démarrer le Micro</button>
 </div>
 
 <script>
-let hydra, mic, fft;
-let isStarted = false;
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
 
-const overlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
+  let hydra, mic, fft;
+  let audioStarted = false;
 
-startBtn.addEventListener('click', () => {
-  if (isStarted) return;
+  startBtn.addEventListener('click', async () => {
+    if (audioStarted) return;
+    try {
+      mic = new p5.AudioIn();
+      await mic.start();
 
-  mic = new p5.AudioIn();
+      fft = new p5.FFT();
+      fft.setInput(mic);
 
-  mic.start(() => {
-    // Micro activé, on peut lancer hydra et fft
-    overlay.style.display = 'none';
-    isStarted = true;
+      hydra = new Hydra({
+        detectAudio: false,
+        canvas: document.createElement('canvas'),
+      });
+      document.body.appendChild(hydra.canvas);
+      hydra.canvas.style.zIndex = '1';
+      hydra.canvas.style.pointerEvents = 'auto'; // autoriser events après démarrage
 
-    fft = new p5.FFT();
-    fft.setInput(mic);
+      overlay.style.display = 'none'; // cacher overlay
+      audioStarted = true;
 
-    // Init Hydra
-    hydra = new Hydra({
-      canvas: document.createElement('canvas'),
-      detectAudio: false,
-      enableStreamCapture: false,
-    });
-    document.body.appendChild(hydra.canvas);
-    hydra.canvas.style.position = 'fixed';
-    hydra.canvas.style.top = '0';
-    hydra.canvas.style.left = '0';
-    hydra.canvas.style.width = '100vw';
-    hydra.canvas.style.height = '100vh';
-    hydra.canvas.style.zIndex = '1';
-
-    drawHydra();
-  }, (err) => {
-    alert("Erreur d'accès au micro : " + err.message);
+      draw();
+    } catch (err) {
+      alert('Erreur d’accès au micro : ' + err.message);
+    }
   });
-});
 
-function drawHydra() {
-  if (!isStarted) return;
+  function draw() {
+    if (!audioStarted) return;
 
-  let bass = fft.getEnergy("bass") / 255;
-  let mid = fft.getEnergy("mid") / 255;
-  let treble = fft.getEnergy("treble") / 255;
+    let bass = fft.getEnergy("bass") / 255;
+    let mid = fft.getEnergy("mid") / 255;
+    let treble = fft.getEnergy("treble") / 255;
 
-  // Si signal faible, on diminue progressivement l'intensité
-  let volume = mic.getLevel();
-  let fade = volume > 0.01 ? 1 : Math.max(0, fade - 0.02);
-  if (fade === undefined) fade = 1;
+    // fade out si pas de son (bass + mid + treble < 0.05)
+    let volume = bass + mid + treble;
+    let fade = Math.min(1, volume * 20);
 
-  osc(10, 0.03, 0.8)
-    .color(
-      0.3 + bass * 1.5,
-      0.4 + mid * 1.2,
-      0.5 + treble * 1.3
-    )
-    .rotate(() => performance.now() * 0.00002 + mid * 0.15)
-    .modulate(
-      osc(5, 0.02)
-        .rotate(() => performance.now() * 0.0001 + treble * 0.5),
-      0.3
-    )
-    .kaleid(6)
-    .scale(() => 1 + mid * 0.4)
-    .blend(o0, 0.25)
-    .mult(fade)
-    .out();
+    osc(10, 0.03, 0.8)
+      .color(
+        0.3 + bass * 1.5,
+        0.4 + mid * 1.2,
+        0.5 + treble * 1.3
+      )
+      .rotate(() => Date.now() * 0.00002 + bass * 0.15)
+      .modulate(
+        osc(5, 0.02)
+          .rotate(() => Date.now() * 0.0001 + mid * 0.5),
+        0.3
+      )
+      .kaleid(6)
+      .scale(() => 1 + mid * 0.4)
+      .add(
+        shape(6, 0.3, 0.2)
+          .scale(() => 0.8 + bass * 0.5)
+          .rotate(() => Date.now() * 0.00005 + treble * 0.2)
+          .color(0.9, 0.6, 0.3)
+          .mult(
+            osc(20)
+              .rotate(0.5 + mid * 0.3)
+          )
+          .modulate(noise(3).rotate(0.2), 0.15)
+      )
+      .blend(o0, 0.25)
+      .brightness(fade) // contrôle la luminosité/fade
+      .out();
 
-  requestAnimationFrame(drawHydra);
-}
+    requestAnimationFrame(draw);
+  }
 </script>
 
 </body>
