@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualisation Audio</title>
+    <title>Visualisation Audio avec Hydra</title>
+    <script src="https://unpkg.com/hydra-synth"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body {
@@ -15,34 +16,21 @@
 </head>
 <body>
     <script>
-        let audioContext;
-        let analyser;
-        let bufferLength;
-        let dataArray;
-        let mic;
-
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            mic = new p5.AudioIn();
-            mic.start();
-            analyser = audioContext.createAnalyser();
-            mic.connect(analyser);
-            analyser.fftSize = 256;
-            bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
+            // Assurez-vous que Hydra est défini avant de l'utiliser
+            if (typeof Hydra !== 'undefined') {
+                // Votre code utilisant Hydra ici
+                const hydra = new Hydra({ detectAudio: false, makeGlobal: true });
+                // Exemple de code Hydra
+                osc(10, 0.1, 1.5).out();
+            } else {
+                console.error('Hydra is not defined');
+            }
         }
 
         function draw() {
-            background(0);
-            analyser.getByteFrequencyData(dataArray);
-
-            let barWidth = width / bufferLength;
-            for (let i = 0; i < bufferLength; i++) {
-                let barHeight = dataArray[i] / 2;
-                fill(barHeight + 100, 50, 50);
-                rect(i * barWidth, height - barHeight, barWidth, barHeight);
-            }
+            // Votre code de dessin ici
         }
 
         function windowResized() {
