@@ -7,36 +7,73 @@
     <script src="https://unpkg.com/hydra-synth"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-    </style>
+     <style>body,html{margin:0;overflow:hidden;background:#000;}</style>
 </head>
 <body>
-    <script>
-        function setup() {
-            createCanvas(windowWidth, windowHeight);
-            // Assurez-vous que Hydra est défini avant de l'utiliser
-            if (typeof Hydra !== 'undefined') {
-                // Votre code utilisant Hydra ici
-                const hydra = new Hydra({ detectAudio: false, makeGlobal: true });
-                // Exemple de code Hydra
-                osc(10, 0.1, 1.5).out();
-            } else {
-                console.error('Hydra is not defined');
-            }
-        }
+  <script>
+    new p5(p => {
+      let hydra;
+      let mic, fft;
 
-        function draw() {
-            // Votre code de dessin ici
-        }
+      p.setup = function() {
+        p.noCanvas();
 
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
-    </script>
+        mic = new p5.AudioIn();
+        mic.start();
+
+        fft = new p5.FFT();
+        fft.setInput(mic);
+
+        hydra = new Hydra({
+          detectAudio: false,
+        });
+        document.body.appendChild(hydra.canvas);
+
+        drawHydra();
+      };
+
+      function drawHydra() {
+        let spectrum = fft.analyze();
+
+        let bass = fft.getEnergy("bass") / 255;
+        let lowMid = fft.getEnergy("lowMid") / 255;
+        let mid = fft.getEnergy("mid") / 255;
+        let highMid = fft.getEnergy("highMid") / 255;
+        let treble = fft.getEnergy("treble") / 255;
+
+     osc(10, 0.03, 0.8)
+  .color(
+    () => 0.3 + a.fft[0] * 1.5,
+    () => 0.4 + a.fft[2] * 1.2,
+    () => 0.5 + a.fft[3] * 1.3
+  )
+  .rotate(() => time * 0.02 + a.fft[1] * 0.15)
+  .modulate(
+    osc(5, 0.02)
+      .rotate(() => time * 0.1 + a.fft[2] * 0.5), 
+    0.3
+  )
+  .kaleid(6)  // 4 -> 6 pour plus de symétrie psyché
+  .scale(() => 1 + a.fft[1] * 0.4)
+  .add(
+    shape(6, 0.3, 0.2)
+      .scale(() => 0.8 + a.fft[0] * 0.5)
+      .rotate(() => time * 0.05 + a.fft[3] * 0.2)
+      .color(0.9, 0.6, 0.3)
+      .mult(
+        osc(20)
+          .rotate(0.5 + a.fft[1] * 0.3)
+      )
+      .modulate(noise(3).rotate(0.2), 0.15)
+  )
+  .blend(o0, 0.25)
+  .out()
+
+
+        requestAnimationFrame(drawHydra);
+      }
+    });
+  </script>
 </body>
+</html>
 </html>
