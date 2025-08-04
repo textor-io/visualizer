@@ -1,74 +1,77 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualisation Audio avec Hydra</title>
-    <script src="visualizer_hydra-synth.js"></script>
-    <script src="visualizer_p5.js"></script>
-    <script src="visualizer_p5.sound.min.js"></script>
-    <style>body,html{margin:0;overflow:hidden;background:#000;}</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisation Audio avec Hydra</title>
+  <script src="visualizer_p5.js"></script>
+  <script src="visualizer_p5.sound.min.js"></script>
+  <script src="visualizer_hydra-synth.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
 </head>
 <body>
   <script>
     new p5(p => {
       let hydra;
       let mic, fft;
-        let gainFactor = 10;
 
-      p.setup = function() {
+      p.setup = function () {
         p.noCanvas();
 
         mic = new p5.AudioIn();
-        mic.start();
+        mic.start(
+          () => console.log("🎤 Micro activé"),
+          err => console.error("❌ Erreur d’accès au micro :", err)
+        );
 
         fft = new p5.FFT();
         fft.setInput(mic);
 
-        hydra = new Hydra({
-          detectAudio: false,
-        });
-        document.body.appendChild(hydra.canvas);
-
-        drawHydra();
+        if (typeof Hydra !== "undefined") {
+          hydra = new Hydra({ detectAudio: false });
+          document.body.appendChild(hydra.canvas);
+          drawHydra();
+        } else {
+          console.error("❌ Hydra n'est pas chargé !");
+        }
       };
 
       function drawHydra() {
-        let spectrum = fft.analyze();
+        const bass = fft.getEnergy("bass") / 255;
+        const mid = fft.getEnergy("mid") / 255;
+        const treble = fft.getEnergy("treble") / 255;
+        const lowMid = fft.getEnergy("lowMid") / 255;
+        const highMid = fft.getEnergy("highMid") / 255;
 
-        let bass = fft.getEnergy("bass") / 255;
-        let lowMid = fft.getEnergy("lowMid") / 255;
-        let mid = fft.getEnergy("mid") / 255;
-        let highMid = fft.getEnergy("highMid") / 255;
-        let treble = fft.getEnergy("treble") / 255;
-
-        // Définir l'objet 'a' avec les données FFT
-        let a = {
-          fft: spectrum
-        };
+        console.log(`🎶 Bass: ${bass.toFixed(2)} | Mid: ${mid.toFixed(2)} | Treble: ${treble.toFixed(2)}`);
 
         osc(10, 0.03, 0.8)
           .color(
-            () => 0.3 + a.fft[0] * 1.5,
-            () => 0.4 + a.fft[2] * 1.2,
-            () => 0.5 + a.fft[3] * 1.3
+            () => 0.3 + bass * 1.5,
+            () => 0.4 + mid * 1.2,
+            () => 0.5 + treble * 1.3
           )
-          .rotate(() => p.millis() * 0.00002 + a.fft[1] * 0.15)
+          .rotate(() => p.millis() * 0.00002 + lowMid * 0.15)
           .modulate(
             osc(5, 0.02)
-              .rotate(() => p.millis() * 0.0001 + a.fft[2] * 0.5),
+              .rotate(() => p.millis() * 0.0001 + mid * 0.5),
             0.3
           )
           .kaleid(6)
-          .scale(() => 1 + a.fft[1] * 0.4)
+          .scale(() => 1 + lowMid * 0.4)
           .add(
             shape(6, 0.3, 0.2)
-              .scale(() => 0.8 + a.fft[0] * 0.5)
-              .rotate(() => p.millis() * 0.00005 + a.fft[3] * 0.2)
+              .scale(() => 0.8 + bass * 0.5)
+              .rotate(() => p.millis() * 0.00005 + treble * 0.2)
               .color(0.9, 0.6, 0.3)
               .mult(
-                osc(20)
-                  .rotate(0.5 + a.fft[1] * 0.3)
+                osc(20).rotate(0.5 + lowMid * 0.3)
               )
               .modulate(noise(3).rotate(0.2), 0.15)
           )
