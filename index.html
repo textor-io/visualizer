@@ -1,94 +1,87 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Hydra + p5 Audio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Charger Hydra en premier -->
-  <script src="https://cdn.jsdelivr.net/npm/hydra-synth@1.3.1/dist/hydra-synth.min.js"></script>
-
-  <!-- p5 et p5.sound -->
+  <meta charset="UTF-8" />
+  <title>Hydra + p5 Micro Test</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/hydra-synth@1.3.1"></script>
   <style>
-    body, html {
+    html, body {
       margin: 0;
-      background: black;
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: white;
-      font-family: sans-serif;
-    }
-    button {
-      font-size: 1.5rem;
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 0.5rem;
-      background: #1e90ff;
-      color: white;
-      cursor: pointer;
+      background: black;
     }
   </style>
 </head>
 <body>
-  <button id="startButton">🎤 Démarrer Visualisation Audio</button>
-
   <script>
-    document.getElementById("startButton").addEventListener("click", () => {
-      document.getElementById("startButton").style.display = "none";
+    let mic, fft, hydra;
+    let bass = 0, mid = 0, treble = 0;
 
-      let mic, fft;
-      let hydra = new Hydra({ detectAudio: false });
+    function setup() {
+      noCanvas();
 
+      // Initialisation micro
+      mic = new p5.AudioIn();
+      mic.start(() => {
+        console.log("🎤 Micro activé");
+      });
+
+      // Analyseur FFT
+      fft = new p5.FFT();
+      fft.setInput(mic);
+
+      // Initialisation d’Hydra sans audio natif
+      hydra = new Hydra({ detectAudio: false });
       document.body.appendChild(hydra.canvas);
 
-      new p5(p => {
-        p.setup = function () {
-          p.noCanvas();
+      // Lancer l'animation
+      drawHydra();
 
-          mic = new p5.AudioIn();
-          mic.start(() => {
-            console.log("🎤 Micro activé");
-          }, (err) => {
-            console.error("Erreur micro :", err);
-          });
+      // Debug volume
+      setInterval(() => {
+        let lvl = mic.getLevel();
+        console.log(`🎚 Niveau micro : ${lvl.toFixed(3)} | Bass: ${bass.toFixed(2)} Mid: ${mid.toFixed(2)} Treble: ${treble.toFixed(2)}`);
+      }, 1000);
+    }
 
-          fft = new p5.FFT();
-          fft.setInput(mic);
+    function drawHydra() {
+      // Lire données FFT
+      let spectrum = fft.analyze();
+      bass = fft.getEnergy("bass") / 255;
+      mid = fft.getEnergy("mid") / 255;
+      treble = fft.getEnergy("treble") / 255;
 
-          drawHydra();
-        };
-
-        function drawHydra() {
-          let spectrum = fft.analyze();
-          let bass = fft.getEnergy("bass") / 255;
-          let mid = fft.getEnergy("mid") / 255;
-          let treble = fft.getEnergy("treble") / 255;
-
-          console.log(`🎶 Bass: ${bass.toFixed(2)} | Mid: ${mid.toFixed(2)} | Treble: ${treble.toFixed(2)}`);
-
-          // Générer la visualisation Hydra
-          osc(10, 0.03, 0.8)
-            .color(
-              0.3 + bass * 1.5,
-              0.4 + mid * 1.2,
-              0.5 + treble * 1.3
+      // Visualisation Hydra avec réactivité audio
+      osc(10, 0.03, 0.8)
+        .color(
+          () => 0.3 + bass * 1.5,
+          () => 0.4 + mid * 1.2,
+          () => 0.5 + treble * 1.3
+        )
+        .rotate(() => time * 0.02 + mid * 0.1)
+        .modulate(
+          osc(5, 0.02).rotate(() => time * 0.1 + mid * 0.5),
+          0.3
+        )
+        .kaleid(6)
+        .scale(() => 1 + bass * 0.4)
+        .add(
+          shape(6, 0.3, 0.2)
+            .scale(() => 0.8 + bass * 0.5)
+            .rotate(() => time * 0.05 + treble * 0.2)
+            .color(0.9, 0.6, 0.3)
+            .mult(
+              osc(20).rotate(() => 0.5 + mid * 0.3)
             )
-            .rotate(() => time * 0.02 + mid * 0.1)
-            .kaleid(6)
-            .scale(1 + bass * 0.3)
-            .blend(o0, 0.2)
-            .out();
+            .modulate(noise(3).rotate(0.2), 0.15)
+        )
+        .blend(o0, 0.25)
+        .out();
 
-          requestAnimationFrame(drawHydra);
-        }
-      });
-    });
+      requestAnimationFrame(drawHydra);
+    }
   </script>
 </body>
 </html>
