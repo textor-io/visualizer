@@ -29,6 +29,9 @@
           () => console.log("🎤 Micro activé"),
           err => console.error("❌ Erreur d’accès au micro :", err)
         );
+        setInterval(() => {
+  console.log("🔊 Niveau micro : ", mic.getLevel().toFixed(3));
+}, 500);
 
         fft = new p5.FFT();
         fft.setInput(mic);
