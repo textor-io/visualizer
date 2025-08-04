@@ -2,96 +2,123 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Hydra + p5 AudioIn Visualizer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Librairies -->
-  <script src="visualizer_p5.min.js"></script>
-  <script src="visualizer_p5.sound.min.js"></script>
-  <script src="visualizer_hydra-synth.js"></script>
+  <title>Hydra + p5 AudioIn avec Overlay</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hydra-synth@1.3.1"></script>
   <style>
-    html, body {
-      margin: 0;
-      background: black;
-      overflow: hidden;
+    body, html {
+      margin: 0; 
+      overflow: hidden; 
+      background: #000;
+      height: 100%;
+      font-family: Arial, sans-serif;
     }
-    canvas {
-      display: block;
+    #overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      cursor: pointer;
+      flex-direction: column;
+      color: white;
+      user-select: none;
+    }
+    #playButton {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #1db954; /* vert "Spotify" pour l'effet cool */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 50px;
+      box-shadow: 0 0 20px #1db954;
+      transition: background 0.3s ease;
+    }
+    #playButton:hover {
+      background: #17a84b;
+      box-shadow: 0 0 30px #17a84b;
+    }
+    #overlayText {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
+
+  <div id="overlay">
+    <div id="playButton">&#9658;</div> <!-- triangle play -->
+    <div id="overlayText">Cliquez pour activer le micro</div>
+  </div>
+
   <script>
-    new p5(p => {
-      let hydra;
-      let mic, fft;
-      let isAudioActive = false;
+    let hydra, mic, fft;
 
-      p.setup = () => {
-        p.noCanvas();
+    const overlay = document.getElementById('overlay');
+    const playButton = document.getElementById('playButton');
 
-        mic = new p5.AudioIn();
-        mic.start(() => {
-          console.log("🎤 Micro activé");
-          isAudioActive = true;
-        });
+    playButton.addEventListener('click', () => {
+      if (!mic) {
+        // Initialisation p5 + hydra après clic
+        new p5(p => {
+          p.noCanvas();
+          mic = new p5.AudioIn();
+          mic.start(() => {
+            console.log('🎤 Micro activé');
+            fft = new p5.FFT();
+            fft.setInput(mic);
+            hydra = new Hydra({ detectAudio: false });
+            document.body.appendChild(hydra.canvas);
+            drawHydra();
 
-        fft = new p5.FFT();
-        fft.setInput(mic);
+            // Enlève l'overlay
+            overlay.style.display = 'none';
+          });
 
-        hydra = new Hydra({ detectAudio: false });
-        document.body.appendChild(hydra.canvas);
+          function drawHydra() {
+            let spectrum = fft.analyze();
 
-        drawHydra();
-      };
+            let bass = fft.getEnergy("bass") / 255;
+            let lowMid = fft.getEnergy("lowMid") / 255;
+            let mid = fft.getEnergy("mid") / 255;
+            let highMid = fft.getEnergy("highMid") / 255;
+            let treble = fft.getEnergy("treble") / 255;
 
-      function drawHydra() {
-        let spectrum = fft.analyze();
-
-        // Calculs d'énergie normalisée
-        let bass = fft.getEnergy("bass") / 255;
-        let lowMid = fft.getEnergy("lowMid") / 255;
-        let mid = fft.getEnergy("mid") / 255;
-        let highMid = fft.getEnergy("highMid") / 255;
-        let treble = fft.getEnergy("treble") / 255;
-
-        // Moyenne globale de l'énergie
-        let avgEnergy = (bass + lowMid + mid + highMid + treble) / 5;
-
-        // S’il n’y a presque pas de son → fond noir
-        if (avgEnergy < 0.02 || !isAudioActive) {
-          solid(0, 0, 0).out(o0);
-          requestAnimationFrame(drawHydra);
-          return;
-        }
-
-        // Forme centrale qui "danse"
-        osc(10, 0.03, 0.8)
-          .color(
-            0.3 + bass * 1.5,
-            0.4 + mid * 1.2,
-            0.5 + treble * 1.3
-          )
-          .rotate(time * 0.02 + lowMid * 0.15)
-          .modulate(
-            osc(5, 0.02).rotate(time * 0.1 + mid * 0.5),
-            0.3
-          )
-          .kaleid(6)
-          .scale(1 + lowMid * 0.4)
-          .add(
-            shape(6, 0.3, 0.2)
-              .scale(0.8 + bass * 0.5)
-              .rotate(time * 0.05 + treble * 0.2)
-              .color(0.9, 0.6, 0.3)
-              .mult(
-                osc(20).rotate(0.5 + lowMid * 0.3)
+            osc(10, 0.03, 0.8)
+              .color(
+                0.3 + bass * 1.5,
+                0.4 + mid * 1.2,
+                0.5 + treble * 1.3
               )
-              .modulate(noise(3).rotate(0.2), 0.15)
-          )
-          .blend(o0, 0.25)
-          .out();
+              .rotate(time * 0.02 + lowMid * 0.15)
+              .modulate(
+                osc(5, 0.02).rotate(time * 0.1 + mid * 0.5),
+                0.3
+              )
+              .kaleid(6)
+              .scale(1 + lowMid * 0.4)
+              .add(
+                shape(6, 0.3, 0.2)
+                  .scale(0.8 + bass * 0.5)
+                  .rotate(time * 0.05 + treble * 0.2)
+                  .color(0.9, 0.6, 0.3)
+                  .mult(
+                    osc(20).rotate(0.5 + lowMid * 0.3)
+                  )
+                  .modulate(noise(3).rotate(0.2), 0.15)
+              )
+              .blend(o0, 0.25)
+              .out();
 
-        requestAnimationFrame(drawHydra);
+            requestAnimationFrame(drawHydra);
+          }
+        });
       }
     });
   </script>
