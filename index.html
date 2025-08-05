@@ -2,86 +2,117 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Hydra + p5 Micro Test</title>
-    <script src="js/visualizer.hydra.synth.js"></script>
-  <script src="js/visualizer.p5.min.js"></script>
-  <script src="js/visualizer.p5.sound.min.js"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizer Hydra</title>
   <style>
     html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
       background: black;
+      height: 100%;
+      width: 100%;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #start-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 2rem;
+      padding: 1rem 2rem;
+      border: 2px solid white;
+      border-radius: 10px;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+    #start-button:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
   </style>
 </head>
 <body>
+
+  <button id="start-button">👁️ Visualiser le sonore 👁️</button>
+
+  <script src="js/visualizer.hydra.synth.js"></script>
   <script>
-    let mic, fft, hydra;
-    let bass = 0, mid = 0, treble = 0;
+    let hydra, audioCtx, analyser, dataArray;
+    let fft = { bass: 0, mid: 0, treble: 0 };
 
-    function setup() {
-      noCanvas();
+    const startButton = document.getElementById('start-button');
+    startButton.addEventListener('click', async () => {
+      startButton.remove();
 
-      // Initialisation micro
-      mic = new p5.AudioIn();
-      mic.start(() => {
+      // Initialiser l'audio
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
         console.log("🎤 Micro activé");
-      });
 
-      // Analyseur FFT
-      fft = new p5.FFT();
-      fft.setInput(mic);
+        startHydra(); // démarrer visuel une fois micro ok
+        animate();    // boucle pour analyser audio
 
-      // Initialisation d’Hydra sans audio natif
+      } catch (err) {
+        console.error("Erreur d'accès au micro :", err);
+      }
+    });
+
+    function startHydra() {
       hydra = new Hydra({ detectAudio: false });
       document.body.appendChild(hydra.canvas);
 
-      // Lancer l'animation
-      drawHydra();
-
-      // Debug volume
-      setInterval(() => {
-        let lvl = mic.getLevel();
-        console.log(`🎚 Niveau micro : ${lvl.toFixed(3)} | Bass: ${bass.toFixed(2)} Mid: ${mid.toFixed(2)} Treble: ${treble.toFixed(2)}`);
-      }, 1000);
-    }
-
-    function drawHydra() {
-      // Lire données FFT
-      let spectrum = fft.analyze();
-      bass = fft.getEnergy("bass") / 255;
-      mid = fft.getEnergy("mid") / 255;
-      treble = fft.getEnergy("treble") / 255;
-
-      // Visualisation Hydra avec réactivité audio
       osc(10, 0.03, 0.8)
         .color(
-          () => 0.3 + bass * 1.5,
-          () => 0.4 + mid * 1.2,
-          () => 0.5 + treble * 1.3
+          () => 0.3 + fft.bass * 1.5,
+          () => 0.4 + fft.mid * 1.2,
+          () => 0.5 + fft.treble * 1.3
         )
-        .rotate(() => time * 0.02 + mid * 0.1)
-        .modulate(
-          osc(5, 0.02).rotate(() => time * 0.1 + mid * 0.5),
-          0.3
-        )
-        .kaleid(6)
-        .scale(() => 1 + bass * 0.4)
-        .add(
-          shape(6, 0.3, 0.2)
-            .scale(() => 0.8 + bass * 0.5)
-            .rotate(() => time * 0.05 + treble * 0.2)
-            .color(0.9, 0.6, 0.3)
-            .mult(
-              osc(20).rotate(() => 0.5 + mid * 0.3)
-            )
-            .modulate(noise(3).rotate(0.2), 0.15)
-        )
-        .blend(o0, 0.25)
+        .rotate(() => Math.sin(time * 0.2) * 0.1)
+        .modulate(noise(3).rotate(0.2), () => 0.2 + fft.treble * 0.3)
+        .blend(o0, () => 0.2 + fft.bass * 0.2)
         .out();
+    }
 
-      requestAnimationFrame(drawHydra);
+    function animate() {
+      requestAnimationFrame(animate);
+      analyser.getByteFrequencyData(dataArray);
+
+      // Découpe du spectre
+      const bassRange = dataArray.slice(0, 20);
+      const midRange = dataArray.slice(20, 80);
+      const trebleRange = dataArray.slice(80);
+
+      const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length / 255;
+
+      fft.bass = avg(bassRange);
+      fft.mid = avg(midRange);
+      fft.treble = avg(trebleRange);
+
+      // Option : fade to black si silence
+      const level = fft.bass + fft.mid + fft.treble;
+      if (level < 0.02) {
+        document.body.style.background = 'black';
+        hydra.setResolution(16, 16); // réduit résolution pour effet noir
+      } else {
+        document.body.style.background = 'black';
+        hydra.setResolution(window.innerWidth, window.innerHeight);
+      }
     }
   </script>
 </body>
