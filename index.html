@@ -13,31 +13,38 @@
       height: 100%;
       width: 100%;
     }
+
     canvas {
       display: block;
       width: 100vw;
       height: 100vh;
     }
+
     #start-button {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100px;
-      height: 100px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
-      background: #cccccc; 
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid white;
+      font-size: 48px;
+      color: white;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
       display: flex;
-      justify-content: center;
       align-items: center;
-      font-size: 50px;
-      box-shadow: 0 0 20px #cccccc;
-      transition: background 0.3s ease;
+      justify-content: center;
+      transition: all 0.3s ease;
     }
+
     #start-button:hover {
-      background: #cccccc;
-      box-shadow: 0 0 30px #cccccc;
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
@@ -85,16 +92,18 @@
           () => 0.4 + fft.mid * 0.8,
           () => 0.5 + fft.treble * 0.9
         )
-        .rotate(() => Math.sin(time * 0.2) * 0.1)
+        .rotate(() => Math.sin(time * 0.2) + fft.bass * 0.1)
         .modulate(osc(2, 0.2).rotate(0.2), () => 0.2 + fft.treble * 0.3)
         .kaleid(300)
         .scale(() => 0.8 + fft.mid * 0.2)
-  .add(shape(5, 0.1, 0.2)
-        .scale(() => 0.8 + fft.bass * 0.1)
-        .rotate(() => time * 0.05)
-        .color(0.9, 0.6, 0.3)
-        .mult(osc(20).rotate(0.5))
-       )
+        .add(
+          shape(5, 0.1, 0.2)
+            .scale(() => 0.8 + fft.bass * 0.1)
+            .rotate(() => time * 0.05)
+            .color(0.9, 0.6, 0.3)
+            .mult(osc(20).rotate(0.5))
+            .modulate(noise(3).rotate(0.2),0.1)
+        )
         .blend(o0, 0.2)
         .out();
     }
@@ -118,7 +127,7 @@
       const level = fft.bass + fft.mid + fft.treble;
       if (level < 0.02) {
         document.body.style.background = 'black';
-        hydra.setResolution(16, 16); // réduit résolution pour effet noir
+        hydra.setResolution(16, 16); // effet blackout
       } else {
         document.body.style.background = 'black';
         hydra.setResolution(window.innerWidth, window.innerHeight);
