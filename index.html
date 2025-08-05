@@ -92,19 +92,20 @@
           () => 0.4 + fft.mid * 0.8,
           () => 0.5 + fft.treble * 0.9
         )
-        .rotate(() => Math.sin(time * 0.2) + fft.bass * 0.1)
-        .modulate(osc(2, 0.2).rotate(0.2), () => 0.2 + fft.treble * 0.3)
-        .kaleid(300)
-        .scale(() => 0.8 + fft.mid * 0.2)
+        .rotate(() => Math.sin(time * 0.1) + fft.bass * 0.2)
+        .modulate(osc(2, 0.2).rotate(0.2), 0.2)
+        .kaleid(500)
+        .scale(() => 0.4 + fft.mid * 1)
         .add(
           shape(5, 0.1, 0.2)
-            .scale(() => 0.8 + fft.bass * 0.1)
-            .rotate(() => time * 0.05)
-            .color(0.9, 0.6, 0.3)
+            .scale(() => 0.2 + fft.mid * 1)
+            .rotate(() => time * 0.01)
+            //.color(0.9, 0.6, 0.3)
             .mult(osc(20).rotate(0.5))
             .modulate(noise(3).rotate(0.2),0.1)
         )
         .blend(o0, 0.2)
+        .blend(o0)
         .out();
     }
 
