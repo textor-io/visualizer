@@ -22,26 +22,24 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 2rem;
-      padding: 1rem 2rem;
-      border: 2px solid white;
-      border-radius: 10px;
-      cursor: pointer;
-      backdrop-filter: blur(5px);
-      transition: all 0.3s ease;
-      z-index: 10;
+      border-radius: 50%;
+      background: #cccccc; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 50px;
+      box-shadow: 0 0 20px #1db954;
+      transition: background 0.3s ease;
     }
     #start-button:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: #2817a8;
+      box-shadow: 0 0 30px #2817a8;
     }
   </style>
 </head>
 <body>
 
-  <button id="start-button">👁️ Visualiser le sonore 👁️</button>
+  <button id="start-button"></button>
 
   <script src="js/visualizer.hydra.synth.js"></script>
   <script>
@@ -85,7 +83,7 @@
         )
         .rotate(() => Math.sin(time * 0.2) * 0.1)
         .modulate(osc(2, 0.2).rotate(0.2), () => 0.2 + fft.treble * 0.3)
-        .kaleid(5000)
+        .kaleid(500)
         .scale(function() { return 0.8 + fft.mid * 0.2 })
   .add(shape(5, 0.1, 0.2)
         .scale(function() { return 0.8 + fft.bass * 0.2 })
